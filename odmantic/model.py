@@ -14,7 +14,6 @@ from typing import (
     ClassVar,
     Dict,
     FrozenSet,
-    _GenericAlias,
     Iterable,
     List,
     Optional,
@@ -62,13 +61,19 @@ from odmantic.field import (
     ODMReference,
 )
 from odmantic.reference import ODMReferenceInfo
-from odmantic.typing import USES_OLD_TYPING_INTERFACE
+from odmantic.typing import HAS_GENERIC_ALIAS_BUILTIN, USES_OLD_TYPING_INTERFACE
 from odmantic.utils import (
     is_dunder,
     raise_on_invalid_collection_name,
     raise_on_invalid_key_name,
     to_snake_case,
 )
+
+if HAS_GENERIC_ALIAS_BUILTIN:
+    from typing import GenericAlias  # type: ignore
+else:
+    from typing import _GenericAlias as GenericAlias  # type: ignore
+
 
 if TYPE_CHECKING:
 
@@ -181,7 +186,7 @@ def validate_type(type_: Type) -> Type:
     if type_origin is not None:
         type_args: Tuple[Type, ...] = getattr(type_, "__args__", ())
         new_arg_types = tuple(validate_type(subtype) for subtype in type_args)
-        type_ = _GenericAlias(type_origin, new_arg_types)
+        type_ = GenericAlias(type_origin, new_arg_types)
         if USES_OLD_TYPING_INTERFACE:
             # FIXME: there is probably a more elegant way of doing this
             subs_tree = type_._subs_tree()
