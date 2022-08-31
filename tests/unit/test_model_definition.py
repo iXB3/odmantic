@@ -1,3 +1,4 @@
+import sys
 from types import FunctionType
 from typing import (
     Any,
@@ -396,3 +397,14 @@ def test_forbidden_config_parameter_validate_assignment():
         class M(Model):
             class Config:
                 validate_assignment = False
+
+
+@pytest.mark.skipif(
+    sys.version_info[:3] >= (3, 9, 0),
+    reason="Standard collection generics not supported by python < 3.9",
+)
+def test_model_definition_with_new_generics():
+    class User(Model):
+        scopes: list[str]  # type: ignore # 3.9 + syntax
+
+    User(scopes=["hello"]).scopes == ["hello"]
