@@ -84,9 +84,6 @@ if TYPE_CHECKING:
         ReprArgs,
     )
 
-if USES_OLD_TYPING_INTERFACE:
-    from typing import _subs_tree  # type: ignore  # noqa
-
 
 UNTOUCHED_TYPES = FunctionType, property, classmethod, staticmethod, type
 
@@ -484,7 +481,9 @@ class _BaseODMModel(pydantic.BaseModel, metaclass=ABCMeta):
         __mutable_fields__: ClassVar[FrozenSet[str]] = frozenset()
         __references__: ClassVar[Tuple[str, ...]] = ()
         __pydantic_model__: ClassVar[Type[BaseBSONModel]]
-        __fields_modified__: Set[str] = set()
+        # __fields_modified__ is not a ClassVar but this allows to hide this field from
+        # the dataclass transform generated constructor
+        __fields_modified__: ClassVar[Set[str]] = set()
 
     __slots__ = ("__fields_modified__",)
 
@@ -543,8 +542,18 @@ class _BaseODMModel(pydantic.BaseModel, metaclass=ABCMeta):
         copied = super().copy(
             include=include, exclude=exclude, update=update, deep=deep  # type: ignore
         )
-        object.__setattr__(copied, "__fields_modified__", set(copied.__fields__))
+        copied._post_copy_update()
         return copied
+
+    def _post_copy_update(self: BaseT) -> None:
+        """Recursively update internal fields of the copied model after it has been
+        copied.
+        """
+        object.__setattr__(self, "__fields_modified__", set(self.__fields__))
+        for field_name, field in self.__odm_fields__.items():
+            if isinstance(field, ODMEmbedded):
+                value = getattr(self, field_name)
+                value._post_copy_update()
 
     def update(
         self,
@@ -648,6 +657,28 @@ class _BaseODMModel(pydantic.BaseModel, metaclass=ABCMeta):
             exclude_none=exclude_none,
         )
 
+    def __doc(
+        self,
+        raw_doc: Dict[str, Any],
+        model: Type["_BaseODMModel"],
+        include: Optional["AbstractSetIntStr"] = None,
+    ) -> Dict[str, Any]:
+        doc: Dict[str, Any] = {}
+        for field_name, field in model.__odm_fields__.items():
+            if include is not None and field_name not in include:
+                continue
+            if isinstance(field, ODMReference):
+                doc[field.key_name] = raw_doc[field_name][field.model.__primary_field__]
+            elif isinstance(field, ODMEmbedded):
+                doc[field.key_name] = self.__doc(raw_doc[field_name], field.model, None)
+            elif field_name in model.__bson_serialized_fields__:
+                doc[field.key_name] = model.__fields__[field_name].type_.__bson__(
+                    raw_doc[field_name]
+                )
+            else:
+                doc[field.key_name] = raw_doc[field_name]
+        return doc
+
     def doc(self, include: Optional["AbstractSetIntStr"] = None) -> Dict[str, Any]:
         """Generate a document representation of the instance (as a dictionary).
 
@@ -659,19 +690,7 @@ class _BaseODMModel(pydantic.BaseModel, metaclass=ABCMeta):
             the document associated to the instance
         """
         raw_doc = self.dict()
-        doc: Dict[str, Any] = {}
-        for field_name, field in self.__odm_fields__.items():
-            if include is not None and field_name not in include:
-                continue
-            if isinstance(field, ODMReference):
-                doc[field.key_name] = raw_doc[field_name]["id"]
-            else:
-                if field_name in self.__bson_serialized_fields__:
-                    doc[field.key_name] = self.__fields__[field_name].type_.__bson__(
-                        raw_doc[field_name]
-                    )
-                else:
-                    doc[field.key_name] = raw_doc[field_name]
+        doc = self.__doc(raw_doc, type(self), include)
         return doc
 
     @classmethod
@@ -757,7 +776,7 @@ class Model(_BaseODMModel, metaclass=ModelMetaclass):
         __collection__: ClassVar[str] = ""
         __primary_field__: ClassVar[str] = ""
 
-        id: Union[ObjectId, Any] = None  # TODO fix basic id field typing
+        id: Union[ObjectId, Any] = Field(init=False)  # TODO fix basic id field typing
 
     def __setattr__(self, name: str, value: Any) -> None:
         if name == self.__primary_field__:

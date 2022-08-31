@@ -3,20 +3,32 @@ site_description: AsyncIO MongoDB ODM (Object Document Mapper) using python type
 repo_name: art049/odmantic
 repo_url: https://github.com/art049/odmantic
 site_url: https://art049.github.io/odmantic/
-strict: true
-docs_dir: .
-site_dir: ../site
+docs_dir: ./docs
+site_dir: ./site
 
 theme:
   name: material
   palette:
-    primary: light green
-    accent: light green
-    scheme: preference
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: green
+      accent: green
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: green
+      accent: green
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
   icon:
     logo: material/spa
+    repo: fontawesome/brands/github
   features:
     - instant
+    - content.tabs.link
 
 extra_css:
   - css/extra.css
@@ -41,7 +53,8 @@ markdown_extensions:
   - pymdownx.snippets:
       base_path: docs/examples_src
       check_paths: true # Fail when the document to include is not found
-  - pymdownx.tabbed
+  - pymdownx.tabbed:
+      alternate_style: true
   - pymdownx.superfences
   - pymdownx.details
   - pymdownx.inlinehilite
@@ -54,6 +67,8 @@ markdown_extensions:
 
 plugins:
   - search
+  - macros:
+      module_name: docs/main
   - mkdocstrings:
       custom_templates: docs/api_reference/templates
       default_handler: python
@@ -77,6 +92,7 @@ nav:
   - API Reference:
       - odmantic.model: ./api_reference/model.md
       - odmantic.engine: ./api_reference/engine.md
+      - odmantic.session: ./api_reference/session.md
       - odmantic.query: ./api_reference/query.md
       - odmantic.field: ./api_reference/field.md
       - odmantic.reference: ./api_reference/reference.md

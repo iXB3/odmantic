@@ -408,3 +408,15 @@ def test_model_definition_with_new_generics():
         scopes: list[str]  # type: ignore # 3.9 + syntax
 
     User(scopes=["hello"]).scopes == ["hello"]
+
+
+def test_embedded_model_alternate_key_name():
+    class Em(EmbeddedModel):
+        name: str = Field(key_name="username")
+
+    class M(Model):
+        f: Em
+
+    instance = M(f=Em(name="Jack"))
+    doc = instance.doc()
+    assert doc["f"] == {"username": "Jack"}

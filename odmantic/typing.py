@@ -9,7 +9,7 @@ else:
     from collections.abc import Callable as Callable
     from typing import Callable as TypingCallable
 
-    NoArgAnyCallable = TypingCallable[[], Any]
+NoArgAnyCallable = TypingCallable[[], Any]
 
 if sys.version_info < (3, 8):
     from typing_extensions import Literal

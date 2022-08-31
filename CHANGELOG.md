@@ -5,17 +5,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Support Python 3.10 in tox ([#236](https://github.com/art049/odmantic/pull/236) by [@art049](https://github.com/art049))
+- Fix dataclass transform constructor type hints ([#249](https://github.com/art049/odmantic/pull/249) by [@art049](https://github.com/art049))
+
+- Update Mongo version in the CI build matrix ([#247](https://github.com/art049/odmantic/pull/247) by [@art049](https://github.com/art049))
+
+## [0.7.0] - 2022-08-30
+
+#### Added
+
+- Add new SyncEngine, support async and sync code ([#231](https://github.com/art049/odmantic/pull/231) by  [@tiangolo](https://github.com/tiangolo))
+
+- Sync engine documentation ([#238](https://github.com/art049/odmantic/pull/238) by [@art049](https://github.com/art049))
+
+- Friendly interface for session and transactions ([#244](https://github.com/art049/odmantic/pull/244) by [@art049](https://github.com/art049))
+
+- Implement the `engine.remove` method to allow instance deletion from a query ([#147](https://github.com/art049/odmantic/pull/147) & [#237](https://github.com/art049/odmantic/pull/237) by [@joeriddles](https://github.com/joeriddles) & [@art049](https://github.com/art049))
+
+#### Internals
+
+- Remove unnecessary Python 3.6 type fixes ([#243](https://github.com/art049/odmantic/pull/243) by [@art049](https://github.com/art049))
+
+- Switch Mongo action to art049/mongodb-cluster-action ([#245](https://github.com/art049/odmantic/pull/245) by [@art049](https://github.com/art049))
+
+- Add Realworld API integrated test ([#246](https://github.com/art049/odmantic/pull/246) by [@art049](https://github.com/art049))
+
+## [0.6.0] - 2022-08-24
+
+#### Breaking Changes
+
+- Drop support for Python 3.6 ([#230](https://github.com/art049/odmantic/pull/230) by [@tiangolo](https://github.com/tiangolo))
+
+#### Added
+
+- Upgrade types and add support for instance autocompletion with `dataclass_transform` (VS Code autocompletion) ([#230](https://github.com/art049/odmantic/pull/230) by [@tiangolo](https://github.com/tiangolo))
 
 - Support Python 3.10 ([#235](https://github.com/art049/odmantic/pull/235) by [@art049](https://github.com/art049))
+#### Fixed
 
-- ✨ Upgrade types and add support for instance autocompletion with dataclass_transform (VS Code autocompletion), drop support for Python 3.6 ([#230](https://github.com/art049/odmantic/pull/230) by [@tiangolo](https://github.com/tiangolo))
+- Fix using the shared session when updating a document ([#227](https://github.com/art049/odmantic/pull/227) by [@tiangolo](https://github.com/tiangolo))
 
-- 🐛 Fix using the shared session when updating a document ([#227](https://github.com/art049/odmantic/pull/227) by [@tiangolo](https://github.com/tiangolo))
+- Fix `EmbeddedModel` deep copy mutability ([#239](https://github.com/art049/odmantic/pull/239) by [@art049](https://github.com/art049))
+
+- Allow models to contain string-based datetime fields that indicate UTC ([#136](https://github.com/art049/odmantic/pull/136) by [@kfox](https://github.com/kfox))
+
+- Fix `Reference` usage with non the non default primary key ([#184](https://github.com/art049/odmantic/pull/184) by [@dynalz](https://github.com/dynalz))
+
+- Fix `key_name` use on EmbeddedModels ([#195](https://github.com/art049/odmantic/pull/195) by [@jvanegmond](https://github.com/jvanegmond))
+
+#### Internals
+
+- Support Python 3.10 in tox ([#236](https://github.com/art049/odmantic/pull/236) by [@art049](https://github.com/art049))
+
+- Fix missing f string in an exception message ([#222](https://github.com/art049/odmantic/pull/222) by [@voglster](https://github.com/voglster))
 
 - Finalize flit migration ([#232](https://github.com/art049/odmantic/pull/232) by [@art049](https://github.com/art049))
-
-- fix missing f string issue #163 ([#222](https://github.com/art049/odmantic/pull/222) by [@voglster](https://github.com/voglster))
 
 ## [0.5.0] - 2022-06-01
 
@@ -222,4 +265,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [0.3.5]: https://github.com/art049/odmantic/compare/v0.3.4...v0.3.5
 [0.4.0]: https://github.com/art049/odmantic/compare/v0.3.5...v0.4.0
 [0.5.0]: https://github.com/art049/odmantic/compare/v0.4.0...v0.5.0
-[unreleased]: https://github.com/art049/odmantic/compare/v0.5.0...HEAD
+[0.6.0]: https://github.com/art049/odmantic/compare/v0.5.0...v0.6.0
+[0.7.0]: https://github.com/art049/odmantic/compare/v0.6.0...v0.7.0
+[unreleased]: https://github.com/art049/odmantic/compare/v0.7.0...HEAD
