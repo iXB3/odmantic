@@ -63,6 +63,28 @@ class Index:
         unique: bool = False,
         name: Optional[str] = None
     ) -> None:
+        """Declare an ODM index in the Model.Config.indexes generator.
+
+        Example usage:
+        ```python
+        from odmantic import Model, Index
+        from odmantic.query import desc
+
+        class Player(Model):
+            name: str
+            score: int
+
+            class Config:
+                @staticmethod
+                def indexes():
+                    yield Index(Player.name, desc(Player.score))
+        ```
+
+        Args:
+            fields (Any | SortExpression | str): fields to build the index with
+            unique: build a unique index
+            name: specify an optional custom index name
+        """
         self.fields = cast(Tuple[Union[SortExpression, FieldProxy], ...], fields)
         self.unique = unique
         self.name = name
