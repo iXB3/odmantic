@@ -81,7 +81,7 @@ class Index:
         ```
 
         Args:
-            fields (Any | SortExpression | str): fields to build the index with
+            *fields (Any | SortExpression | str): fields to build the index with
             unique: build a unique index
             name: specify an optional custom index name
         """

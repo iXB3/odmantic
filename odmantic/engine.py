@@ -372,9 +372,9 @@ class AIOEngine(BaseEngine):
                         [pymongo_index], session=driver_session
                     )
                 except pymongo.errors.OperationFailure as exc:
-                    if (
-                        update_existing_indexes
-                        and getattr(exc, "code", None) == 85  # aka IndexOptionsConflict
+                    if update_existing_indexes and getattr(exc, "code", None) in (
+                        85,  # aka IndexOptionsConflict
+                        86,  # aka IndexKeySpecsConflict for MongoDB > 5
                     ):
                         await collection.drop_index(
                             index.get_index_specifier(), session=driver_session
@@ -780,9 +780,9 @@ class SyncEngine(BaseEngine):
                 try:
                     collection.create_indexes([pymongo_index], session=driver_session)
                 except pymongo.errors.OperationFailure as exc:
-                    if (
-                        update_existing_indexes
-                        and getattr(exc, "code", None) == 85  # aka IndexOptionsConflict
+                    if update_existing_indexes and getattr(exc, "code", None) in (
+                        85,  # aka IndexOptionsConflict
+                        86,  # aka IndexKeySpecsConflict for MongoDB > 5
                     ):
                         collection.drop_index(
                             index.get_index_specifier(), session=driver_session
