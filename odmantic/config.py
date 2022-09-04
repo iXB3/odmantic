@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import json
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Callable, Dict, Iterable, Optional, Type, Union
 
 from pydantic.main import BaseConfig
 from pydantic.typing import AnyCallable
 
 from odmantic.bson import BSON_TYPES_ENCODERS
 from odmantic.utils import is_dunder
+
+if TYPE_CHECKING:
+    import odmantic.index as ODMIndex
 
 try:
     from pydantic.config import SchemaExtraCallable
@@ -23,6 +28,10 @@ class BaseODMConfig:
 
     collection: Optional[str] = None
     parse_doc_with_default_factories: bool = False
+
+    @staticmethod
+    def indexes() -> Iterable[ODMIndex.Index]:
+        return []
 
     # Inherited from pydantic
     title: Optional[str] = None

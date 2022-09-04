@@ -18,6 +18,7 @@ from typing import (
     cast,
 )
 
+import pymongo
 from pydantic.utils import lenient_issubclass
 from pymongo import MongoClient
 from pymongo.client_session import ClientSession
@@ -342,6 +343,29 @@ class AIOEngine(BaseEngine):
             return session.get_driver_session()
         assert not isinstance(session, AIOSessionBase)  # Abstract class
         return session
+
+    async def configure_database(
+        self,
+        models: Sequence[Type[ModelType]],
+        session: SyncSessionType = None,
+    ) -> None:
+        """Apply model constraints to the database.
+
+        Args:
+            models: list of models to initialize the database with
+            session: an optional session to use for the operation
+        """
+        driver_session = self._get_session(session)
+        for model in models:
+            collection = self.get_collection(model)
+            indexes: List[pymongo.IndexModel] = []
+
+            for index in model.__indexes__():
+                indexes.append(index.get_pymongo_index())
+            await collection.create_indexes(
+                indexes,
+                session=driver_session,
+            )
 
     def session(self) -> AIOSession:
         """Get a new session for the engine to allow ordering sequential operations.
@@ -697,6 +721,29 @@ class SyncEngine(BaseEngine):
             return session.get_driver_session()
         assert not isinstance(session, SyncSessionBase)  # Abstract class
         return session
+
+    def configure_database(
+        self,
+        models: Sequence[Type[ModelType]],
+        session: SyncSessionType = None,
+    ) -> None:
+        """Apply model constraints to the database.
+
+        Args:
+            models: list of models to initialize the database with
+            session: an optional session to use for the operation
+        """
+        driver_session = self._get_session(session)
+        for model in models:
+            collection = self.get_collection(model)
+            indexes: List[pymongo.IndexModel] = []
+
+            for index in model.__indexes__():
+                indexes.append(index.get_pymongo_index())
+            collection.create_indexes(
+                indexes,
+                session=driver_session,
+            )
 
     def session(self) -> SyncSession:
         """Get a new session for the engine to allow ordering sequential operations.
