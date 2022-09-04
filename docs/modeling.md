@@ -36,6 +36,10 @@ option in the `Config` class.
 !!! warning
     Models and Embedded models inheritance is not supported yet.
 
+### Indexes
+
+
+
 ### Custom model validators
 
 Exactly as done with pydantic, it's possible to define custom model validators as
@@ -65,15 +69,22 @@ in the model body.
 **Available options**:
 
  `#!python collection: str`
- :    Customize the collection name associated to the model. see [this
+ :    Customize the collection name associated to the model. See [this
       section](modeling.md#collection) for more details about default collection naming.
 
  `#!python parse_doc_with_default_factories: bool`
  :    Wether to allow populating field values with default factories while parsing
-      documents from the database. See [this
-      section](raw_query_usage.md#advanced-parsing-behavior) for more details.
+      documents from the database. See
+      [Advanced parsing behavior](raw_query_usage.md#advanced-parsing-behavior) for more
+      details.
 
       Default: `#!python False`
+
+`#!python indexes: Callable[[],Iterable[Index]]`
+ :    Define additional indexes for the model. See [Indexes](modeling.md#indexes) for
+      more details.
+
+      Default: `#!python lambda: []`
 
  `#!python title: str` *(inherited from Pydantic)*
  :    Title inferred in the JSON schema.
