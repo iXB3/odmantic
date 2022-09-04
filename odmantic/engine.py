@@ -26,7 +26,7 @@ from pymongo.collection import Collection
 from pymongo.command_cursor import CommandCursor
 from pymongo.database import Database
 
-from odmantic.exceptions import DocumentNotFoundError
+from odmantic.exceptions import DocumentNotFoundError, DuplicateKeyError
 from odmantic.field import FieldProxy, ODMReference
 from odmantic.model import Model
 from odmantic.query import QueryExpression, SortExpression, and_
@@ -502,12 +502,15 @@ class AIOEngine(BaseEngine):
         if len(fields_to_update) > 0:
             doc = instance.doc(include=fields_to_update)
             collection = self.get_collection(type(instance))
-            await collection.update_one(
-                {"_id": getattr(instance, instance.__primary_field__)},
-                {"$set": doc},
-                upsert=True,
-                session=session,
-            )
+            try:
+                await collection.update_one(
+                    {"_id": getattr(instance, instance.__primary_field__)},
+                    {"$set": doc},
+                    upsert=True,
+                    session=session,
+                )
+            except pymongo.errors.DuplicateKeyError as e:
+                raise DuplicateKeyError(instance, e)
             object.__setattr__(instance, "__fields_modified__", set())
         return instance
 
@@ -533,12 +536,16 @@ class AIOEngine(BaseEngine):
         Returns:
             the saved instance
 
+        Raises:
+            DuplicateKeyError: the instance is duplicated according to a unique index.
+
         NOTE:
             The save operation actually modify the instance argument in place. However,
             the instance is still returned for convenience.
 
         <!---
         #noqa: DAR401 TypeError
+        #noqa: DAR402 DuplicateKeyError
         -->
         """
         if not isinstance(instance, Model):
@@ -572,9 +579,16 @@ class AIOEngine(BaseEngine):
         Returns:
             the saved instances
 
+        Raises:
+            DuplicateKeyError: an instance is duplicated according to a unique index.
+
         NOTE:
             The save_all operation actually modify the arguments in place. However, the
             instances are still returned for convenience.
+
+        <!---
+        #noqa: DAR402 DuplicateKeyError
+        -->
         """
         if session:
             added_instances = [
@@ -876,12 +890,15 @@ class SyncEngine(BaseEngine):
         if len(fields_to_update) > 0:
             doc = instance.doc(include=fields_to_update)
             collection = self.get_collection(type(instance))
-            collection.update_one(
-                {"_id": getattr(instance, instance.__primary_field__)},
-                {"$set": doc},
-                upsert=True,
-                session=session,
-            )
+            try:
+                collection.update_one(
+                    {"_id": getattr(instance, instance.__primary_field__)},
+                    {"$set": doc},
+                    upsert=True,
+                    session=session,
+                )
+            except pymongo.errors.DuplicateKeyError as e:
+                raise DuplicateKeyError(instance, e)
             object.__setattr__(instance, "__fields_modified__", set())
         return instance
 
@@ -907,12 +924,16 @@ class SyncEngine(BaseEngine):
         Returns:
             the saved instance
 
+        Raises:
+            DuplicateKeyError: the instance is duplicated according to a unique index.
+
         NOTE:
             The save operation actually modify the instance argument in place. However,
             the instance is still returned for convenience.
 
         <!---
         #noqa: DAR401 TypeError
+        #noqa: DAR402 DuplicateKeyError
         -->
         """
         if not isinstance(instance, Model):
@@ -947,9 +968,15 @@ class SyncEngine(BaseEngine):
         Returns:
             the saved instances
 
+        Raises:
+            DuplicateKeyError: an instance is duplicated according to a unique index.
+
         NOTE:
             The save_all operation actually modify the arguments in place. However, the
             instances are still returned for convenience.
+        <!---
+        #noqa: DAR402 DuplicateKeyError
+        -->
         """
         if session:
             added_instances = [

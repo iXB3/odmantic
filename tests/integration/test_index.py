@@ -1,6 +1,7 @@
 import pytest
 
 from odmantic.engine import AIOEngine, SyncEngine
+from odmantic.exceptions import DuplicateKeyError
 from odmantic.field import Field
 from odmantic.index import Index
 from odmantic.model import Model
@@ -177,3 +178,29 @@ async def test_sync_multiple_indexes(sync_engine: SyncEngine):
         )
         is not None
     )
+
+
+async def test_unique_index_duplicate_save(aio_engine: AIOEngine):
+    class M(Model):
+        f: int = Field(unique=True)
+
+    await aio_engine.configure_database([M])
+
+    await aio_engine.save(M(f=1))
+    duplicated_instance = M(f=1)
+    with pytest.raises(DuplicateKeyError) as e:
+        await aio_engine.save(duplicated_instance)
+    assert e.value.instance == duplicated_instance
+
+
+async def test_sync_unique_index_duplicate_save(sync_engine: SyncEngine):
+    class M(Model):
+        f: int = Field(unique=True)
+
+    sync_engine.configure_database([M])
+
+    sync_engine.save(M(f=1))
+    duplicated_instance = M(f=1)
+    with pytest.raises(DuplicateKeyError) as e:
+        sync_engine.save(duplicated_instance)
+    assert e.value.instance == duplicated_instance
