@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from typing import Any, Dict, Optional, Tuple, Union, cast
+from typing import Any, Dict, Optional, Sequence, Tuple, Union, cast
 
 import pymongo
 
@@ -13,8 +13,16 @@ class ODMBaseIndex(metaclass=ABCMeta):
         self.index_name = index_name
 
     @abstractmethod
-    def get_pymongo_index(self) -> pymongo.IndexModel:
+    def get_index_specifier(self) -> Sequence[Tuple[str, int]]:
         ...
+
+    def get_pymongo_index(self) -> pymongo.IndexModel:
+        kwargs: Dict[str, Any] = {"keys": self.get_index_specifier()}
+        if self.index_name is not None:
+            kwargs["name"] = self.index_name
+        if self.unique:
+            kwargs["unique"] = True
+        return pymongo.IndexModel(**kwargs)
 
 
 class ODMSingleFieldIndex(ODMBaseIndex):
@@ -22,13 +30,10 @@ class ODMSingleFieldIndex(ODMBaseIndex):
         super().__init__(unique, index_name)
         self.key_name = key_name
 
-    def get_pymongo_index(self) -> pymongo.IndexModel:
-        kwargs: Dict[str, Any] = {"keys": self.key_name}
-        if self.index_name is not None:
-            kwargs["name"] = self.index_name
-        if self.unique:
-            kwargs["unique"] = True
-        return pymongo.IndexModel(**kwargs)
+    def get_index_specifier(self) -> Sequence[Tuple[str, int]]:
+        return [
+            (self.key_name, pymongo.ASCENDING),
+        ]
 
 
 class ODMCompoundIndex(ODMBaseIndex):
@@ -41,20 +46,14 @@ class ODMCompoundIndex(ODMBaseIndex):
         super().__init__(unique, index_name)
         self.fields = fields
 
-    def get_pymongo_index(self) -> pymongo.IndexModel:
-        kwargs: Dict[str, Any] = {}
-        kwargs["keys"] = [
+    def get_index_specifier(self) -> Sequence[Tuple[str, int]]:
+        return [
             (
                 list(f.keys())[0],
                 pymongo.ASCENDING if list(f.values())[0] == 1 else pymongo.DESCENDING,
             )
             for f in self.fields
         ]
-        if self.index_name is not None:
-            kwargs["name"] = self.index_name
-        if self.unique:
-            kwargs["unique"] = True
-        return pymongo.IndexModel(**kwargs)
 
 
 class Index:

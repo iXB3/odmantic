@@ -347,25 +347,43 @@ class AIOEngine(BaseEngine):
     async def configure_database(
         self,
         models: Sequence[Type[ModelType]],
+        *,
+        update_existing_indexes: bool = False,
         session: SyncSessionType = None,
     ) -> None:
         """Apply model constraints to the database.
 
         Args:
             models: list of models to initialize the database with
+            update_existing_indexes: conflicting indexes will be dropped before creation
             session: an optional session to use for the operation
+
+        <!---
+        #noqa: DAR401 pymongo.errors.OperationFailure
+        -->
         """
         driver_session = self._get_session(session)
         for model in models:
             collection = self.get_collection(model)
-            indexes: List[pymongo.IndexModel] = []
-
             for index in model.__indexes__():
-                indexes.append(index.get_pymongo_index())
-            await collection.create_indexes(
-                indexes,
-                session=driver_session,
-            )
+                pymongo_index = index.get_pymongo_index()
+                try:
+                    await collection.create_indexes(
+                        [pymongo_index], session=driver_session
+                    )
+                except pymongo.errors.OperationFailure as exc:
+                    if (
+                        update_existing_indexes
+                        and getattr(exc, "code", None) == 85  # aka IndexOptionsConflict
+                    ):
+                        await collection.drop_index(
+                            index.get_index_specifier(), session=driver_session
+                        )
+                        await collection.create_indexes(
+                            [pymongo_index], session=driver_session
+                        )
+                    else:
+                        raise
 
     def session(self) -> AIOSession:
         """Get a new session for the engine to allow ordering sequential operations.
@@ -739,25 +757,41 @@ class SyncEngine(BaseEngine):
     def configure_database(
         self,
         models: Sequence[Type[ModelType]],
+        *,
+        update_existing_indexes: bool = False,
         session: SyncSessionType = None,
     ) -> None:
         """Apply model constraints to the database.
 
         Args:
             models: list of models to initialize the database with
+            update_existing_indexes: conflicting indexes will be dropped before creation
             session: an optional session to use for the operation
+
+        <!---
+        #noqa: DAR401 pymongo.errors.OperationFailure
+        -->
         """
         driver_session = self._get_session(session)
         for model in models:
             collection = self.get_collection(model)
-            indexes: List[pymongo.IndexModel] = []
-
             for index in model.__indexes__():
-                indexes.append(index.get_pymongo_index())
-            collection.create_indexes(
-                indexes,
-                session=driver_session,
-            )
+                pymongo_index = index.get_pymongo_index()
+                try:
+                    collection.create_indexes([pymongo_index], session=driver_session)
+                except pymongo.errors.OperationFailure as exc:
+                    if (
+                        update_existing_indexes
+                        and getattr(exc, "code", None) == 85  # aka IndexOptionsConflict
+                    ):
+                        collection.drop_index(
+                            index.get_index_specifier(), session=driver_session
+                        )
+                        collection.create_indexes(
+                            [pymongo_index], session=driver_session
+                        )
+                    else:
+                        raise
 
     def session(self) -> SyncSession:
         """Get a new session for the engine to allow ordering sequential operations.

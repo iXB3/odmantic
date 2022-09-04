@@ -26,7 +26,7 @@ async def test_single_field_index_creation(aio_engine: AIOEngine):
     )
 
 
-async def test_sync_single_field_index_creation(sync_engine: SyncEngine):
+def test_sync_single_field_index_creation(sync_engine: SyncEngine):
     class M(Model):
         f: int = Field(index=True)
 
@@ -58,7 +58,7 @@ async def test_single_field_index_creation_unique(aio_engine: AIOEngine):
     )
 
 
-async def test_sync_single_field_index_creation_unique(sync_engine: SyncEngine):
+def test_sync_single_field_index_creation_unique(sync_engine: SyncEngine):
     class M(Model):
         f: int = Field(unique=True)
 
@@ -91,7 +91,7 @@ async def test_compound_index_with_name(aio_engine: AIOEngine):
     assert info["test"]["key"] == [("f", 1), ("g", -1)]
 
 
-async def test_sync_compound_index_with_name(sync_engine: SyncEngine):
+def test_sync_compound_index_with_name(sync_engine: SyncEngine):
     class M(Model):
         f: int
         g: int
@@ -144,7 +144,7 @@ async def test_multiple_indexes(aio_engine: AIOEngine):
     )
 
 
-async def test_sync_multiple_indexes(sync_engine: SyncEngine):
+def test_sync_multiple_indexes(sync_engine: SyncEngine):
     class M(Model):
         f: int = Field(index=True)
         g: int = Field(unique=True)
@@ -193,7 +193,7 @@ async def test_unique_index_duplicate_save(aio_engine: AIOEngine):
     assert e.value.instance == duplicated_instance
 
 
-async def test_sync_unique_index_duplicate_save(sync_engine: SyncEngine):
+def test_sync_unique_index_duplicate_save(sync_engine: SyncEngine):
     class M(Model):
         f: int = Field(unique=True)
 
@@ -204,3 +204,109 @@ async def test_sync_unique_index_duplicate_save(sync_engine: SyncEngine):
     with pytest.raises(DuplicateKeyError) as e:
         sync_engine.save(duplicated_instance)
     assert e.value.instance == duplicated_instance
+
+
+async def test_double_index_creation(aio_engine: AIOEngine):
+    class M(Model):
+        f: int = Field(index=True)
+
+    await aio_engine.configure_database([M])
+    await aio_engine.configure_database([M])
+
+    info = await aio_engine.get_collection(M).index_information()
+    assert (
+        next(
+            filter(lambda v: v["key"] == [("f", 1)], info.values()),
+            None,
+        )
+        is not None
+    )
+
+
+def test_sync_double_index_creation(sync_engine: SyncEngine):
+    class M(Model):
+        f: int = Field(index=True)
+
+    sync_engine.configure_database([M])
+    sync_engine.configure_database([M])
+
+    info = sync_engine.get_collection(M).index_information()
+    assert (
+        next(
+            filter(lambda v: v["key"] == [("f", 1)], info.values()),
+            None,
+        )
+        is not None
+    )
+
+
+async def test_index_replacement(aio_engine: AIOEngine):
+    class M(Model):
+        f: int = Field(unique=True)
+
+        class Config:
+            collection = "test"
+
+    await aio_engine.configure_database([M])
+    info = await aio_engine.get_collection(M).index_information()
+    assert (
+        next(
+            filter(lambda v: v["key"] == [("f", 1)] and v["unique"], info.values()),
+            None,
+        )
+        is not None
+    )
+
+    class M2(Model):
+        f: int = Field(index=True)
+
+        class Config:
+            collection = "test"
+
+    await aio_engine.configure_database([M2], update_existing_indexes=True)
+    info = await aio_engine.get_collection(M).index_information()
+    assert (
+        next(
+            filter(
+                lambda v: v["key"] == [("f", 1)] and "unique" not in v, info.values()
+            ),
+            None,
+        )
+        is not None
+    )
+
+
+def test_sync_index_replacement(sync_engine: SyncEngine):
+    class M(Model):
+        f: int = Field(unique=True)
+
+        class Config:
+            collection = "test"
+
+    sync_engine.configure_database([M])
+    info = sync_engine.get_collection(M).index_information()
+    assert (
+        next(
+            filter(lambda v: v["key"] == [("f", 1)] and v["unique"], info.values()),
+            None,
+        )
+        is not None
+    )
+
+    class M2(Model):
+        f: int = Field(index=True)
+
+        class Config:
+            collection = "test"
+
+    sync_engine.configure_database([M2], update_existing_indexes=True)
+    info = sync_engine.get_collection(M).index_information()
+    assert (
+        next(
+            filter(
+                lambda v: v["key"] == [("f", 1)] and "unique" not in v, info.values()
+            ),
+            None,
+        )
+        is not None
+    )
