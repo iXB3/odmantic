@@ -25,10 +25,15 @@ from pymongo.collection import Collection
 from pymongo.command_cursor import CommandCursor
 from pymongo.database import Database
 
-from odmantic.exceptions import DocumentNotFoundError
+from odmantic.exceptions import (
+    DocumentNotFoundError,
+    ReferencedDocumentNotFoundError,
+    ReferenceNotFoundError,
+)
 from odmantic.field import FieldProxy, ODMReference
 from odmantic.model import Model
 from odmantic.query import QueryExpression, SortExpression, and_
+from odmantic.reference import Reference
 from odmantic.session import (
     AIOSession,
     AIOSessionBase,
@@ -463,6 +468,20 @@ class AIOEngine(BaseEngine):
         if len(results) == 0:
             return None
         return results[0]
+
+    async def resolve(
+        self,
+        ref: Reference[ModelType],
+        session: AIOSessionType = None,
+    ) -> ModelType:
+        result = await self.find_one(
+            ref.model,
+            getattr(ref.model, ref.model.__primary_field__) == ref.pointer,
+            session=session,
+        )
+        if result is None:
+            raise ReferenceNotFoundError(ref.model, ref.pointer)
+        return result
 
     async def _save(
         self, instance: ModelType, session: "AsyncIOMotorClientSession"
